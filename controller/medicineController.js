@@ -1,5 +1,7 @@
 const MedicineModel = require("../model/medicine");
+const DonorModel = require("../model/Donerdata"); // import
 
+//----------------------------------------------------------------------------------
 const createMedicine = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -41,26 +43,41 @@ const createMedicine = async (req, res) => {
 };
 
 
+
+//-----------------------------------------------------------------------------------------
+
 const getAllMedicines = async (req, res) => {
-    try {
-        const medicines = await MedicineModel.find()
-            .populate("userId", "email");
+  try {
+    const medicines = await MedicineModel.find()
+      .populate("userId", "email"); // only email from user
 
-        res.status(200).json({
-            message: "All medicines",
-            success: true,
-            data: medicines
-        });
+    // 🔥 attach donor info manually
+    const result = await Promise.all(
+      medicines.map(async (m) => {
+        const donor = await DonorModel.findOne({ userId: m.userId._id });
 
-    } catch (err) {
-        res.status(500).json({
-            message: "Error fetching medicines",
-            error: err.message,
-            success: false
-        });
-    }
+        return {
+          ...m._doc,
+          donor: donor || null
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "All medicines",
+      data: result
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
 };
 
+//---------------------------------------------------------------------------------------
 const deleteMedicine = async (req, res) => {
     try {
         const { id } = req.params;
@@ -81,6 +98,7 @@ const deleteMedicine = async (req, res) => {
     }
 };
 
+//--------------------------------------------------------------------------------------------
 const getMyMedicines = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -102,47 +120,67 @@ const getMyMedicines = async (req, res) => {
     }
 };
 
+
+//-----------------------------------------------------------------------------------------
 const filterMedicines = async (req, res) => {
-    try {
-        const { name, city } = req.query;
+  try {
+    const { name, city } = req.query;
 
-        let filter = {};
+    let filter = {};
 
-        // 🔍 NAME (single + multi word both)
-        if (name) {
-            const words = name.trim().split(/\s+/); // "para tab" → ["para","tab"]
+    // 🔍 NAME
+    if (name) {
+      const words = name.trim().split(/\s+/);
 
-            filter.$and = words.map(word => ({
-                name: { $regex: word, $options: "i" }
-            }));
-        }
-
-        // 📍 CITY
-        if (city) {
-            // अगर पहले से $and है तो उसमें add करो
-            if (filter.$and) {
-                filter.$and.push({
-                    "location.city": { $regex: city, $options: "i" }
-                });
-            } else {
-                filter["location.city"] = { $regex: city, $options: "i" };
-            }
-        }
-
-        const data = await MedicineModel.find(filter);
-
-        res.status(200).json({
-            success: true,
-            data: data
-        });
-
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: err.message
-        });
+      filter.$and = words.map(word => ({
+        name: { $regex: word, $options: "i" }
+      }));
     }
+
+    // 📍 CITY
+    if (city) {
+      if (filter.$and) {
+        filter.$and.push({
+          "location.city": { $regex: city, $options: "i" }
+        });
+      } else {
+        filter["location.city"] = { $regex: city, $options: "i" };
+      }
+    }
+
+    // ✅ Step 1: populate email
+    const medicines = await MedicineModel.find(filter)
+      .populate("userId", "email");
+
+    // ✅ Step 2: attach donor info
+    const result = await Promise.all(
+      medicines.map(async (m) => {
+
+        const userId =
+          typeof m.userId === "object" ? m.userId._id : m.userId;
+
+        const donor = await DonorModel.findOne({ userId });
+
+        return {
+          ...m._doc,
+          donor: donor || null
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
 };
+
 
 module.exports={createMedicine,
     getAllMedicines,

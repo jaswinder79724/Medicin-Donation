@@ -4,7 +4,7 @@ const UserModel = require("../model/user");
 const donnerdatasave = async (req, res) => {
     try {
         const userId = req.user._id; // from JWT middleware
-
+       console.log(req.body);
         const {
             name,
             gender,
@@ -53,7 +53,7 @@ const donnerdatasave = async (req, res) => {
 
     } catch (err) {
         res.status(500).json({
-            message: "Error saving donor data",
+            message: `Error saving donor data ${err}`,
             error: err.message,
             success: false
         });

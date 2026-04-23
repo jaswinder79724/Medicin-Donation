@@ -1,6 +1,8 @@
 const bcrypt=require("bcrypt")
 const jwt=require("jsonwebtoken");
 const UserModel=require("../model/user")
+require("dotenv").config();
+
 const key=process.env.JWT_SECRET;
 
 const singup=async(req,res)=>{

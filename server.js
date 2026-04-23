@@ -19,7 +19,6 @@ app.get("/ping",(req,res)=>{
 })
 
 app.use("/Auth",Auth)
-
 app.use("/donor", donorRoutes);
 app.use("/needy", needyRoutes);
 app.use("/admin", adminRoutes);
