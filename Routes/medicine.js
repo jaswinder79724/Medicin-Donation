@@ -24,11 +24,11 @@ router.get("/my", ensureAuth, checkRole("donor"), getMyMedicines);
 // 🔍 needy search/filter
 router.get("/filter", ensureAuth, checkRole("needy"), filterMedicines);
 
-// ❌ delete (admin + donor)
+// ❌ delete ( donor)
 router.delete(
     "/delete/:id",
     ensureAuth,
-    checkRole("admin", "donor"),
+    checkRole("donor"),
     deleteMedicine
 );
 

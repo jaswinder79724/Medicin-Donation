@@ -54,6 +54,64 @@ res.status(200).json({
     }
 }
 
+
+//--------------------------------------------------------------------------------------
+const updatePassword = async (req, res) => {
+    // console.log("ok")
+  try {
+    const userId = req.user._id; // from auth middleware
+
+    const { oldPassword, newPassword } = req.body;
+    
+
+    // 🔍 check fields
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields required"
+      });
+    }
+
+    // 🔍 find user
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // 🔐 check old password
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Old password is incorrect"
+      });
+    }
+
+    // 🔒 hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully"
+    });
+
+  } catch (err) {
+    
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+//-------------------------------------------------------------------------------------
 module.exports={
-    singup,login
+    singup,login,updatePassword
 }
