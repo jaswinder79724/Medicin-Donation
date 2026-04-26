@@ -49,7 +49,7 @@ const singup = async (req, res) => {
 
     // 🔗 verification link (TEMP backend link)
 // ✅ NEW (frontend route)
-     const link = `http://localhost:5173/verify/${verifyToken}`;
+     const link = `https://medicare-iota-nine.vercel.app/${verifyToken}`;
     // 📧 send email
     await sendEmail(
       email,
