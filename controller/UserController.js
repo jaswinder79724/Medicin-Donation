@@ -107,6 +107,8 @@ const verifyEmail = async (req, res) => {
 
     // ✅ verify now
     user.isVerified = true;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpire = null;
 
     await user.save();
 
