@@ -1,6 +1,23 @@
 const NeedyModel = require("../model/NeddyData");
 const UserModel = require("../model/user");
+const cloudinary = require("../config/cloudinary");
+const streamifier = require("streamifier");
 
+// 🔥 helper (same as donor)
+const uploadToCloudinary = (fileBuffer, folder) => {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+            }
+        );
+        streamifier.createReadStream(fileBuffer).pipe(stream);
+    });
+};
+
+// ================= CREATE =================
 const neddydatasave = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -17,7 +34,6 @@ const neddydatasave = async (req, res) => {
             note
         } = req.body;
 
-        // check already exist
         const existing = await NeedyModel.findOne({ userId });
         if (existing) {
             return res.status(400).json({
@@ -26,9 +42,30 @@ const neddydatasave = async (req, res) => {
             });
         }
 
+        let imageUrl = "";
+        let proofUrl = "";
+
+        // ✅ profile image
+        if (req.files?.image?.[0]) {
+            const result = await uploadToCloudinary(
+                req.files.image[0].buffer,
+                "needy_profiles"
+            );
+            imageUrl = result.secure_url;
+        }
+
+        // ✅ disease proof image
+        if (req.files?.diseaseProofImage?.[0]) {
+            const result = await uploadToCloudinary(
+                req.files.diseaseProofImage[0].buffer,
+                "disease_proofs"
+            );
+            proofUrl = result.secure_url;
+        }
+
         const needy = new NeedyModel({
             userId,
-            image: req.file?.path || "",
+            image: imageUrl,
             name,
             gender,
             mobile_no,
@@ -37,13 +74,12 @@ const neddydatasave = async (req, res) => {
             full_address,
             disease,
             medicine,
-            diseaseProofImage: req.files?.diseaseProofImage?.[0]?.path || "",
+            diseaseProofImage: proofUrl,
             note
         });
 
         await needy.save();
 
-        // update user profile status
         await UserModel.findByIdAndUpdate(userId, {
             isProfileComplete: true
         });
@@ -55,6 +91,7 @@ const neddydatasave = async (req, res) => {
         });
 
     } catch (err) {
+        console.error("ERROR:", err);
         res.status(500).json({
             message: "Error saving needy data",
             error: err.message,
@@ -63,9 +100,7 @@ const neddydatasave = async (req, res) => {
     }
 };
 
-
-//-----------------------------------------------------------------
-
+// ================= GET =================
 const showneddydata = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -94,25 +129,29 @@ const showneddydata = async (req, res) => {
     }
 };
 
-//-----------------------------------------------------
-
+// ================= UPDATE =================
 const editneddydata = async (req, res) => {
     try {
         const userId = req.user._id;
 
-        const updatedData = {
-            ...req.body
-        };
+        const updatedData = { ...req.body };
 
-        // update main image
-        if (req.file) {
-            updatedData.image = req.file.path;
+        // ✅ profile image update
+        if (req.files?.image?.[0]) {
+            const result = await uploadToCloudinary(
+                req.files.image[0].buffer,
+                "needy_profiles"
+            );
+            updatedData.image = result.secure_url;
         }
 
-        // update disease proof image (if using multiple files)
-        if (req.files?.diseaseProofImage) {
-            updatedData.diseaseProofImage =
-                req.files.diseaseProofImage[0].path;
+        // ✅ disease proof update
+        if (req.files?.diseaseProofImage?.[0]) {
+            const result = await uploadToCloudinary(
+                req.files.diseaseProofImage[0].buffer,
+                "disease_proofs"
+            );
+            updatedData.diseaseProofImage = result.secure_url;
         }
 
         const needy = await NeedyModel.findOneAndUpdate(
@@ -143,4 +182,8 @@ const editneddydata = async (req, res) => {
     }
 };
 
-module.exports={neddydatasave,showneddydata,editneddydata};
+module.exports = {
+    neddydatasave,
+    showneddydata,
+    editneddydata
+};

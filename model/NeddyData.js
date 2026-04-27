@@ -22,7 +22,7 @@ const NeddyInfo=new Schema({
     //other-details
     disease:{type:String,required:true},
     medicine:{type:String,required:true},
-    DiseaseRefimage:{type:String},
+    diseaseProofImage:{type:String},
     note:{type:String,required:false}
 
 })

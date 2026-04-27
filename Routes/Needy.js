@@ -3,6 +3,7 @@ const router = express.Router();
 
 const auth = require("../middleware/Auth");
 const checkRole = require("../middleware/checkRole");
+const upload = require("../middleware/upload"); // 👈 IMPORTANT
 
 const {
     neddydatasave,
@@ -10,11 +11,36 @@ const {
     editneddydata
 } = require("../controller/needyController");
 
-// 🧑‍⚕️ only needy access
-router.post("/save", auth, checkRole("needy"), neddydatasave);
+// 🧑‍⚕️ CREATE (2 images)
+router.post(
+  "/save",
+  auth,
+  checkRole("needy"),
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "diseaseProofImage", maxCount: 1 }
+  ]),
+  neddydatasave
+);
 
-router.get("/get", auth, checkRole("needy"), showneddydata);
+// GET
+router.get(
+  "/get",
+  auth,
+  checkRole("needy"),
+  showneddydata
+);
 
-router.put("/edit", auth, checkRole("needy"), editneddydata);
+// UPDATE (2 images)
+router.put(
+  "/edit",
+  auth,
+  checkRole("needy"),
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "diseaseProofImage", maxCount: 1 }
+  ]),
+  editneddydata
+);
 
 module.exports = router;

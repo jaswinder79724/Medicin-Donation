@@ -1,30 +1,39 @@
-const express=require("express");
-const Auth=require("./Routes/Auth")
+const express = require("express");
+require("dotenv").config(); // 👈 always top
+
+const cors = require("cors");
+
+// routes
+const Auth = require("./Routes/Auth");
 const donorRoutes = require("./Routes/Doner");
 const needyRoutes = require("./Routes/Needy");
 const adminRoutes = require("./Routes/admin");
 const medicineRoutes = require("./Routes/medicine");
-require("dotenv").config();
 
-const bodyparser=require("body-parser")
-const cors=require("cors")
-require("./model/db")
-const app=express();
+// db connect
+require("./model/db");
 
-app.use(bodyparser.json());
+const app = express();
+
+// middleware
+app.use(express.json());
 app.use(cors());
 
-app.get("/ping",(req,res)=>{
-         res.send("pong");
-})
+// test route
+app.get("/ping", (req, res) => {
+  res.send("pong");
+});
 
-app.use("/Auth",Auth)
+// routes
+app.use("/Auth", Auth);
 app.use("/donor", donorRoutes);
 app.use("/needy", needyRoutes);
 app.use("/admin", adminRoutes);
 app.use("/medicine", medicineRoutes);
 
-const port=process.env.PORT;
-app.listen(port,()=>{
-    console.log(`server is stated on ${port}`)
-})
+// server
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, () => {
+  console.log(`Server started on ${PORT}`);
+});
